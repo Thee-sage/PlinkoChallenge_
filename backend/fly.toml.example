@@ -1,0 +1,25 @@
+# Fly.io configuration example
+# Copy this to backend/fly.toml after running 'fly launch'
+
+app = "your-app-name"
+primary_region = "iad"  # Choose closest region: iad (US), lhr (UK), etc.
+
+[build]
+
+[env]
+  PORT = "3001"
+  NODE_ENV = "production"
+
+[http_service]
+  internal_port = 3001
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 256
+
