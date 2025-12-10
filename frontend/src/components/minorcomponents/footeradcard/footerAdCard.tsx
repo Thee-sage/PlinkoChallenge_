@@ -12,7 +12,12 @@ export const FooterAdCard = ({ ad }: FooterAdCardProps) => {
 
   const getImageUrl = () => {
     if (!ad.imageUrl || imageError) return DEFAULT_PLACEHOLDER;
-    return ad.imageUrl.startsWith('http') ? ad.imageUrl : `${baseURL}${ad.imageUrl}`;
+    // If it's already a full URL (Cloudinary), use it directly
+    if (ad.imageUrl.startsWith('http')) return ad.imageUrl;
+    // If it's an old /uploads/ URL, it won't work on Render - show placeholder
+    if (ad.imageUrl.startsWith('/uploads/')) return DEFAULT_PLACEHOLDER;
+    // Otherwise try with baseURL
+    return `${baseURL}${ad.imageUrl}`;
   };
 
   return (

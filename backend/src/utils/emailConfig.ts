@@ -6,15 +6,22 @@ const createTransporter = () => {
     return nodemailer.createTransport({
         service: 'gmail',
         host: 'smtp.gmail.com',
-        port: 465,
-        secure: true, // true for 465, false for other ports
+        port: 587, // Try 587 if 465 times out
+        secure: false, // false for 587, true for 465
         auth: {
             user: process.env.GMAIL_USER,
             pass: process.env.GMAIL_APP_PASSWORD // Use App Password, not regular password
         },
         tls: {
             rejectUnauthorized: false
-        }
+        },
+        connectionTimeout: 10000, // 10 seconds
+        greetingTimeout: 10000, // 10 seconds
+        socketTimeout: 10000, // 10 seconds
+        // Retry configuration
+        pool: true,
+        maxConnections: 1,
+        maxMessages: 3
     });
 };
 

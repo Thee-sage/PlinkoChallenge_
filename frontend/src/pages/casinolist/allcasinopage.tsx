@@ -146,9 +146,12 @@ export function PublicCasinoList(): JSX.Element {
               {casino.logo && (
                 <div className={styles.chihnContainer}>
                   <img
-                    src={`${baseURL}${casino.logo}`}
+                    src={casino.logo.startsWith('http') ? casino.logo : `${baseURL}${casino.logo}`}
                     alt={casino.name}
                     className={styles.chihnChavi}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
                   />
                 </div>
               )}
@@ -291,9 +294,12 @@ export function PublicCasinoDetail() {
                           <div className={styles.headerContent}>
                               {casino.logo && (
                                   <img
-                                      src={`${baseURL}${casino.logo}`}
+                                      src={casino.logo.startsWith('http') ? casino.logo : `${baseURL}${casino.logo}`}
                                       alt={casino.name}
                                       className={styles.logo}
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).style.display = 'none';
+                                      }}
                                   />
                               )}
                               <div className={styles.basicInfo}>

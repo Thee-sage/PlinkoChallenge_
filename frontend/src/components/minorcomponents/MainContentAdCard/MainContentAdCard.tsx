@@ -17,6 +17,8 @@ export const MainContentAdCard = ({ ad }: MainContentAdCardProps) => {
 
   const imageUrl = ad.imageUrl?.startsWith('http')
     ? ad.imageUrl
+    : ad.imageUrl?.startsWith('/uploads/')
+    ? DEFAULT_PLACEHOLDER // Old /uploads/ URLs don't work on Render
     : ad.imageUrl
     ? `${baseURL}${ad.imageUrl}`
     : DEFAULT_PLACEHOLDER;

@@ -660,7 +660,11 @@ useEffect(() => {
         setCasino(casinoData);
         
         if (response.data.logo) {
-          setPreviewUrl(`${baseURL}${response.data.logo}`);
+          // If logo is already a full URL (Cloudinary), use it directly
+          const logoUrl = response.data.logo.startsWith('http') 
+            ? response.data.logo 
+            : `${baseURL}${response.data.logo}`;
+          setPreviewUrl(logoUrl);
         }
 
       } catch (error) {
