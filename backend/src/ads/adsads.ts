@@ -3,20 +3,17 @@ import { Ad } from '../models/Ad';
 import { verifyAdminAuth } from '../middlewares/adminauthenticationmiddleware';
 import multer from 'multer';
 import path from 'path';
+import { uploadToCloudinary, deleteFromCloudinary } from '../utils/cloudinaryConfig';
 
 const router = express.Router();
 
-const storage = multer.diskStorage({
-    destination: './uploads/',
-    filename: (req, file, cb) => {
-        cb(null, `${Date.now()}-${file.originalname}`);
-    }
-});
+// Use memory storage for Cloudinary (files are uploaded directly to cloud)
+const storage = multer.memoryStorage();
 
 const upload = multer({
     storage: storage,
     limits: {
-        fileSize: 5 * 1024 * 1024
+        fileSize: 5 * 1024 * 1024 // 5MB limit
     },
     fileFilter: (req, file, cb) => {
         const allowedTypes = /jpeg|jpg|png|gif/;
@@ -241,6 +238,12 @@ router.put('/id/:id', upload.single('image'), async (req, res) => {
     }
 
     try {
+        // Fetch existing ad first
+        const existingAd = await Ad.findById(req.params.id);
+        if (!existingAd) {
+            return res.status(404).json({ message: 'Ad not found' });
+        }
+
         const { 
             title, description, link, service, location, rating, 
             isShowInMainPage, percentageInHomePage, orderInCasinosPage,

@@ -315,8 +315,8 @@ router.put('/:id', upload.single('logo'), async (req: any, res) => {
             // Upload logo to Cloudinary
             try {
                 // Delete old logo if exists
-                if (casino.logo && casino.logo.startsWith('http')) {
-                    await deleteFromCloudinary(casino.logo);
+                if (existingCasino.logo && existingCasino.logo.startsWith('http')) {
+                    await deleteFromCloudinary(existingCasino.logo);
                 }
                 processedData.logo = await uploadToCloudinary(req.file, 'plinko-casinos');
             } catch (error) {
