@@ -123,7 +123,12 @@ export function AdList() {
   const getImageUrl = (ad: Ad) => {
     if (!ad.imageUrl) return defaultPlaceholder;
     if (imageLoadErrors[ad._id]) return defaultPlaceholder;
-    return ad.imageUrl.startsWith('http') ? ad.imageUrl : `${baseURL}${ad.imageUrl}`;
+    // If it's already a full URL (Cloudinary), use it directly
+    if (ad.imageUrl.startsWith('http')) return ad.imageUrl;
+    // If it's an old /uploads/ URL, it won't work on Render - show placeholder
+    if (ad.imageUrl.startsWith('/uploads/')) return defaultPlaceholder;
+    // Otherwise try with baseURL
+    return `${baseURL}${ad.imageUrl}`;
   };
 
   if (!isAuthenticated) {
