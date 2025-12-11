@@ -482,18 +482,16 @@ app.get('/dev/send-test-email', async (req, res) => {
         await sendGenericEmail({ 
             to: testEmail, 
             subject: 'Test Email from Plinko Challenge', 
-            html: '<p>This is a test email from the Plinko Challenge application. If you received this, Mailgun is configured correctly!</p>' 
+            html: '<p>This is a test email from the Plinko Challenge application. If you received this, SendGrid is configured correctly!</p>' 
         });
 
         res.status(200).json({ 
-            message: 'Test email sent successfully', 
-            to: testEmail 
+            success: true 
         });
     } catch (error) {
         console.error('Error sending test email:', error);
         res.status(500).json({ 
-            error: 'Failed to send test email', 
-            details: (error as Error).message 
+            error: (error as Error).message || 'Failed to send test email'
         });
     }
 });

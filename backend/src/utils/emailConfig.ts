@@ -1,26 +1,19 @@
-import Mailgun from 'mailgun.js';
-import formData from 'form-data';
+import sgMail from '@sendgrid/mail';
 
-// Mailgun Configuration
-const MAILGUN_API_KEY = process.env.MAILGUN_API_KEY || '';
-const MAILGUN_DOMAIN = process.env.MAILGUN_DOMAIN || '';
+// SendGrid Configuration
+const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || '';
 
-// Initialize Mailgun client
-let mailgunClient: any = null;
-if (MAILGUN_API_KEY && MAILGUN_DOMAIN) {
-    const mg = new Mailgun(formData);
-    mailgunClient = mg.client({
-        username: 'api',
-        key: MAILGUN_API_KEY
-    });
-    console.log('✅ Mailgun client initialized');
+// Initialize SendGrid
+if (SENDGRID_API_KEY) {
+    sgMail.setApiKey(SENDGRID_API_KEY);
+    console.log('✅ SendGrid client initialized');
 } else {
-    console.warn('⚠️  Mailgun not configured. MAILGUN_API_KEY and MAILGUN_DOMAIN environment variables are required.');
+    console.warn('⚠️  SendGrid not configured. SENDGRID_API_KEY environment variable is required.');
 }
 
 // Helper function to get the sender email
 export const getSenderEmail = (): string => {
-    return process.env.MAILGUN_FROM_EMAIL || process.env.GMAIL_USER || 'noreply@example.com';
+    return process.env.SENDGRID_FROM_EMAIL || process.env.GMAIL_USER || 'noreply@example.com';
 };
 
 // Create a nodemailer-like transporter interface for backward compatibility
@@ -33,68 +26,77 @@ export const emailTransporter = {
         text?: string;
         replyTo?: string;
     }) => {
-        if (!mailgunClient || !MAILGUN_DOMAIN) {
-            console.warn('Mailgun not configured, skipping email send');
+        if (!SENDGRID_API_KEY) {
+            console.warn('SendGrid not configured, skipping email send');
             return;
         }
 
         try {
-            const messageData: any = {
+            const msg: any = {
                 from: options.from || getSenderEmail(),
-                to: Array.isArray(options.to) ? options.to.join(', ') : options.to,
+                to: Array.isArray(options.to) ? options.to : options.to,
                 subject: options.subject,
-                html: options.html || options.text || '',
             };
 
-            if (options.replyTo) {
-                messageData['h:Reply-To'] = options.replyTo;
+            if (options.html) {
+                msg.html = options.html;
+            }
+            if (options.text) {
+                msg.text = options.text;
+            }
+            if (!msg.html && !msg.text) {
+                msg.text = '';
             }
 
-            await mailgunClient.messages.create(MAILGUN_DOMAIN, messageData);
+            if (options.replyTo) {
+                msg.replyTo = options.replyTo;
+            }
+
+            await sgMail.send(msg);
             console.log(`Email sent successfully to ${options.to}`);
         } catch (error) {
-            console.error('Error sending email via Mailgun:', error);
+            console.error('Error sending email via SendGrid:', error);
             throw error;
         }
     },
     verify: (callback?: (error: any, success?: any) => void) => {
-        if (!mailgunClient || !MAILGUN_DOMAIN) {
+        if (!SENDGRID_API_KEY) {
             if (callback) {
-                callback(new Error('Mailgun not configured'), null);
+                callback(new Error('SendGrid not configured'), null);
             }
             return;
         }
-        // Mailgun doesn't have a verify method like nodemailer, so we'll just check if client exists
+        // SendGrid doesn't have a verify method like nodemailer, so we'll just check if API key exists
         if (callback) {
             callback(null, true);
         }
     }
 };
 
-// Export Mailgun-specific functions for direct use if needed
+// Export SendGrid-specific functions for direct use if needed
 export async function sendPasswordResetEmail(toEmail: string, resetUrl: string) {
-    if (!mailgunClient || !MAILGUN_DOMAIN) {
-        console.warn('Mailgun not configured, skipping sendPasswordResetEmail');
+    if (!SENDGRID_API_KEY) {
+        console.warn('SendGrid not configured, skipping sendPasswordResetEmail');
         return;
     }
 
-    const message = {
+    const msg = {
         from: getSenderEmail(),
         to: toEmail,
         subject: 'Password reset',
         html: `<p>Click to reset your password: <a href="${resetUrl}">${resetUrl}</a></p>`
     };
 
-    await mailgunClient.messages.create(MAILGUN_DOMAIN, message);
+    await sgMail.send(msg);
 }
 
 export async function sendGenericEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
-    if (!mailgunClient || !MAILGUN_DOMAIN) {
-        console.warn('Mailgun not configured, skipping sendGenericEmail');
+    if (!SENDGRID_API_KEY) {
+        console.warn('SendGrid not configured, skipping sendGenericEmail');
         return;
     }
 
-    await mailgunClient.messages.create(MAILGUN_DOMAIN, {
+    await sgMail.send({
         from: getSenderEmail(),
         to,
         subject,
