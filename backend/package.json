@@ -6,7 +6,11 @@
   "scripts": {
     "build": "tsc -b",
     "start": "node dist/index.js",
-    "dev": "ts-node src/index.ts"
+    "dev": "ts-node src/index.ts",
+    "migrate:uploads": "node scripts/migrate-uploads-to-cloudinary.js",
+    "cloudinary:test": "node scripts/test-cloudinary.js",
+    "cloudinary:check": "node scripts/check-uploads-quick.js",
+    "cloudinary:list": "node scripts/list-cloudinary-uploads.js"
   },
   "keywords": [],
   "author": "",

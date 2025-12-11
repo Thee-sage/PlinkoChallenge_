@@ -27,7 +27,7 @@ I've updated your code to use **Cloudinary** (free cloud storage):
 2. Copy these 3 values:
    - **Cloud Name** (e.g., `dxyz123abc`)
    - **API Key** (e.g., `123456789012345`)
-   - **API Secret** (e.g., `abcdefghijklmnopqrstuvwxyz123456`)
+   - **API Secret** (e.g., ``)
 
 ### Step 3: Install Package
 ```bash

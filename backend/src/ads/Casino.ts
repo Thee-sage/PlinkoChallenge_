@@ -48,17 +48,17 @@ const cleanArrayData = (data: string | string[] | any): any => {
 const upload = multer({
     storage: storage,
     limits: {
-        fileSize: 5 * 1024 * 1024
+        fileSize: 10 * 1024 * 1024 // 10MB limit (Cloudinary free tier max)
     },
     fileFilter: (req, file, cb) => {
-        const allowedTypes = /jpeg|jpg|png|gif/;
+        const allowedTypes = /jpeg|jpg|png|gif|webp/;
         const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
         const mimetype = allowedTypes.test(file.mimetype);
 
         if (extname && mimetype) {
             return cb(null, true);
         }
-        cb(new Error('Only images are allowed!'));
+        cb(new Error('Only images are allowed! Supported formats: jpeg, jpg, png, gif, webp'));
     }
 });
 
@@ -119,9 +119,13 @@ router.post('/', upload.single('logo'), async (req, res) => {
         if (req.file) {
             try {
                 logoUrl = await uploadToCloudinary(req.file, 'plinko-casinos');
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Error uploading to Cloudinary:', error);
-                return res.status(500).json({ message: 'Error uploading logo' });
+                const errorMessage = error?.message || 'Error uploading logo to Cloudinary';
+                return res.status(500).json({ 
+                    message: errorMessage,
+                    error: process.env.NODE_ENV === 'development' ? error : undefined
+                });
             }
         }
 
@@ -319,9 +323,13 @@ router.put('/:id', upload.single('logo'), async (req: any, res) => {
                     await deleteFromCloudinary(existingCasino.logo);
                 }
                 processedData.logo = await uploadToCloudinary(req.file, 'plinko-casinos');
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Error uploading to Cloudinary:', error);
-                return res.status(500).json({ message: 'Error uploading logo' });
+                const errorMessage = error?.message || 'Error uploading logo to Cloudinary';
+                return res.status(500).json({ 
+                    message: errorMessage,
+                    error: process.env.NODE_ENV === 'development' ? error : undefined
+                });
             }
         }
 
