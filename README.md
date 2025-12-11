@@ -84,7 +84,10 @@ plinkochallenge/
 - `GOOGLE_CLIENT_ID` - Google OAuth client ID
 - `BASE_URL` - Backend URL
 - `FRONTEND_URL` - Frontend URL
-- Email configuration (for password reset, verification)
+- `MAILGUN_API_KEY` - Mailgun API key (for email sending - recommended for production)
+- `MAILGUN_DOMAIN` - Mailgun domain (e.g., mg.yourdomain.com)
+- `MAILGUN_FROM_EMAIL` - From email address (e.g., YourApp <noreply@yourdomain.com>)
+- `DEV_TEST_EMAIL` - Email address for testing email functionality
 - Admin password hash
 
 ### Frontend (`frontend/.env`)
@@ -163,8 +166,13 @@ CORS is now configurable via `ALLOWED_ORIGINS` environment variable (comma-separ
 - Check `allowedOrigins` in `backend/src/index.ts`
 
 **Email Not Working**
-- For Gmail, create an "App Password" (not regular password)
-- Google Account → Security → 2-Step Verification → App Passwords
+- **Mailgun (Recommended):** Sign up at https://www.mailgun.com (free tier: 5,000 emails/month)
+  - Get your API key and domain from Mailgun dashboard
+  - Set `MAILGUN_API_KEY`, `MAILGUN_DOMAIN`, and `MAILGUN_FROM_EMAIL` in `.env`
+  - Test email endpoint: `GET /dev/send-test-email` (requires `DEV_TEST_EMAIL` env var)
+- **Legacy Gmail:** Create an "App Password" (not regular password)
+  - Google Account → Security → 2-Step Verification → App Passwords
+  - Note: Gmail SMTP may have timeout issues on Render - use Mailgun for production
 
 ## 📝 Notes
 

@@ -467,6 +467,37 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
     res.status(500).json({ error: 'Internal server error' });
 });
 
+// Dev test endpoint for email (only enable in non-production or for testing)
+app.get('/dev/send-test-email', async (req, res) => {
+    try {
+        const { sendGenericEmail } = await import('./utils/emailConfig');
+        const testEmail = process.env.DEV_TEST_EMAIL;
+        
+        if (!testEmail) {
+            return res.status(400).json({ 
+                error: 'DEV_TEST_EMAIL environment variable not set' 
+            });
+        }
+
+        await sendGenericEmail({ 
+            to: testEmail, 
+            subject: 'Test Email from Plinko Challenge', 
+            html: '<p>This is a test email from the Plinko Challenge application. If you received this, Mailgun is configured correctly!</p>' 
+        });
+
+        res.status(200).json({ 
+            message: 'Test email sent successfully', 
+            to: testEmail 
+        });
+    } catch (error) {
+        console.error('Error sending test email:', error);
+        res.status(500).json({ 
+            error: 'Failed to send test email', 
+            details: (error as Error).message 
+        });
+    }
+});
+
 // Route setup
 app.use('/wallet', walletRequestRoutes);
 app.use('/api/auth', authRoutes); 
