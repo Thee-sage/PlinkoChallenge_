@@ -74,6 +74,7 @@ const allowedOrigins = allowedOriginsEnv
     : [
         process.env.FRONTEND_URL || "http://localhost:5173",
         "http://localhost:5173",
+        "https://plinkochallenge.vercel.app",
         "https://frontend-nu-blond-80.vercel.app",
         "https://plinkochallenge.com",
         "http://wh1409895.ispot.cc/",
