@@ -17,6 +17,7 @@ import publicadsRoutes from "./publicads";
 import path from 'path';
 import multer from 'multer';
 import fs from 'fs';
+import { trace } from "./utils/trace";
 
 // Configure dotenv with explicit path
 dotenv.config({ path: path.join(__dirname, '../.env') });
@@ -234,7 +235,16 @@ app.post("/game", async (req, res) => {
         }
 
         wallet.balance -= price;
-        await wallet.save();
+        try {
+            await wallet.save();
+        } catch (walletError) {
+            trace.error("Wallet transaction failed", {
+                userId: uid,
+                amount: price,
+                reason: (walletError as Error).message,
+            });
+            throw walletError;
+        }
 
         let outcome = 0;
         const pattern = [];
@@ -253,7 +263,16 @@ app.post("/game", async (req, res) => {
         const winnings = price * multiplier;
 
         wallet.balance += winnings;
-        await wallet.save();
+        try {
+            await wallet.save();
+        } catch (walletError) {
+            trace.error("Wallet transaction failed", {
+                userId: uid,
+                amount: winnings,
+                reason: (walletError as Error).message,
+            });
+            throw walletError;
+        }
 
         userBallDrops[uid].count++;
 
@@ -406,6 +425,14 @@ app.post('/settings', async (req, res) => {
 
         await settings.save();
 
+        trace.configChange(
+            "Game configuration updated by admin",
+            {
+                adminId: lastSignedInBy,
+                changes: req.body,
+            }
+        );
+
         // Emit updated settings
         io.emit("settings_updated", {
             ...settings.toObject(),
@@ -459,6 +486,13 @@ app.get('/user-wallet', async (req, res) => {
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
     console.error('Error:', err);
+    
+    trace.error(err.message, {
+        route: req.originalUrl,
+        method: req.method,
+        stack: err.stack,
+    });
+    
     if (err instanceof multer.MulterError) {
         if (err.code === 'LIMIT_FILE_SIZE') {
             return res.status(400).json({ error: 'File size is too large. Maximum size is 5MB.' });
@@ -538,6 +572,11 @@ mongoose.connect(mongoUri, {
     }, () => {
         console.log(`Server is running on port ${port}`);
         console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+        
+        trace.deploy({
+            env: process.env.NODE_ENV,
+            port: process.env.PORT,
+        });
     });
 })
 .catch(err => {

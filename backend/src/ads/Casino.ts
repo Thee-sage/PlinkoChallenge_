@@ -6,6 +6,7 @@ import multer from 'multer';
 import path from 'path';
 import { processCasinoUpdateData } from '../utils/casinoValidation';
 import { uploadToCloudinary, deleteFromCloudinary } from '../utils/cloudinaryConfig';
+import { trace } from '../utils/trace';
 
 const router = express.Router();
 
@@ -354,6 +355,18 @@ router.put('/:id', upload.single('logo'), async (req: any, res) => {
                 casinoId: casinoId 
             });
         }
+
+        trace.configChange(
+            "Casino configuration updated by admin",
+            {
+                adminId: req.admin?.email,
+                casinoId: casinoId,
+                changes: {
+                    payoutRatio: processedData.payoutRatio,
+                    payoutSpeed: processedData.payoutSpeed,
+                },
+            }
+        );
 
         return res.status(200).json({
             message: 'Casino updated successfully',

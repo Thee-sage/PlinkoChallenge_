@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import { User } from './models/User'; // Adjust the import path to where your User model is defined
 import { Wallet } from './models/Wallet'; // Adjust the import path to where your Wallet model is defined
 import { WalletRequest } from './models/WalletRequest'; // Import the WalletRequest model
+import { trace } from './utils/trace';
 
 const router = express.Router();
 
@@ -76,7 +77,16 @@ router.patch("/request/:id/approve", async (req: Request, res: Response) => {
             return res.status(404).send({ error: "Wallet not found." });
         }
         wallet.balance += request.requestedAmount;
-        await wallet.save();
+        try {
+            await wallet.save();
+        } catch (walletError) {
+            trace.error("Wallet transaction failed", {
+                userId: request.uid,
+                amount: request.requestedAmount,
+                reason: (walletError as Error).message,
+            });
+            throw walletError;
+        }
 
         // Emit event to notify frontend
         io.emit("walletRequestApproved", { 
