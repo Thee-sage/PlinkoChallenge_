@@ -5,6 +5,7 @@ import { baseURL } from "../../utils";
 import { useWallet } from "../../contexts/Walletcontext"; 
 import styles from "./Game.module.css";
 import Zixoslogo from "../../assets/zixos";
+import { fetchCachedSettings } from "../../utils/settingsCache";
 
 interface GameSettings {
   maxBallPrice: number;
@@ -25,18 +26,18 @@ export function Game() {
   
   const { setBalance, setRemainingZixos } = useWallet();
 
-  // Fetch game settings
+  // Fetch game settings using shared cache (avoids duplicate request with Gamepage.tsx)
   useEffect(() => {
-    const fetchGameSettings = async () => {
+    const loadSettings = async () => {
       try {
-        const response = await axios.get(`${baseURL}/settings`);
-        setGameSettings(response.data);
+        const data = await fetchCachedSettings();
+        setGameSettings(data);
       } catch (error) {
         console.error("Error fetching game settings:", error);
       }
     };
     
-    fetchGameSettings();
+    loadSettings();
   }, []);
 
   // Handle resize by forcing a re-render, the BallManager has its own resize listener

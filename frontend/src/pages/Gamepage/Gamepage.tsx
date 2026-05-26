@@ -10,6 +10,7 @@ import { AdContainer } from '../../components/minorcomponents/AdContainer/AdCont
 import { Ad } from '../../components/minorcomponents/types';
 import PlinkoInfo from "./plinkoinfo/plinkoinfo";
 import { baseURL } from "../../utils";
+import { fetchCachedSettings, invalidateSettingsCache } from "../../utils/settingsCache";
 
 // Mobile breakpoints
 const MOBILE_BREAKPOINT = 2200; // For header and sidebar
@@ -86,23 +87,15 @@ export function GamePage() {
     };
   }, []);
 
-  // Fetch ad settings from server just once
+  // Fetch ad settings from server just once using shared cache
   useEffect(() => {
     let isMounted = true;
     
-    const fetchSettings = async () => {
+    const loadSettings = async () => {
       try {
-        const response = await axios.get(`${baseURL}/settings`);
+        const settings = await fetchCachedSettings();
         
-        if (!isMounted) return;
-        
-        // Check if settings exist directly in response.data or in response.data.settings
-        const settings = response.data.settings || response.data;
-        
-        if (!settings) {
-          console.error('Settings not found in API response');
-          return; // Keep using default values
-        }
+        if (!isMounted || !settings) return;
         
         // Use optional chaining to safely access properties
         setAdSettings({
@@ -121,7 +114,7 @@ export function GamePage() {
       }
     };
     
-    fetchSettings();
+    loadSettings();
     
     // A single socket connection that doesn't get recreated
     let socket: any = null;
@@ -131,6 +124,9 @@ export function GamePage() {
       if (socket) {
         socket.on("settings_updated", (updatedSettings: GameSettings) => {
           if (!isMounted || !updatedSettings) return;
+          
+          // Invalidate the cache so next fetch gets fresh data
+          invalidateSettingsCache();
           
           setAdSettings(prevSettings => ({
             standardAdCount: updatedSettings.standardAdCount ?? prevSettings.standardAdCount,

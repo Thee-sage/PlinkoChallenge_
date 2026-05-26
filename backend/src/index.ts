@@ -148,13 +148,30 @@ const MULTIPLIERS: { [key: number]: number } = {
 
 const userBallDrops: { [userId: string]: { count: number, timestamp: number } } = {};
 
+// In-memory cache for GameSettings (singleton document, rarely changes)
+let cachedSettings: IGameSettings | null = null;
+let settingsCacheTime = 0;
+const SETTINGS_CACHE_TTL = 60000; // 60 seconds
+
 // Helper functions
 const getGameSettings = async (): Promise<IGameSettings> => {
+    const now = Date.now();
+    if (cachedSettings && (now - settingsCacheTime) < SETTINGS_CACHE_TTL) {
+        return cachedSettings;
+    }
     const settings = await GameSettings.findOne();
     if (!settings) {
         return new GameSettings({ lastSignedInBy: 'system' });
     }
+    cachedSettings = settings;
+    settingsCacheTime = now;
     return settings;
+};
+
+// Invalidate the settings cache (called when settings are updated)
+const invalidateSettingsCache = () => {
+    cachedSettings = null;
+    settingsCacheTime = 0;
 };
 
 const resetBallDrops = (userId: string, dropResetTime: number): void => {
@@ -303,6 +320,8 @@ app.post("/game", async (req, res) => {
 app.get('/settings', async (req, res) => {
     try {
         const settings = await getGameSettings();
+        // Allow browsers/CDNs to cache this for 60 seconds
+        res.set('Cache-Control', 'public, max-age=60');
         res.send(settings);
     } catch (error) {
         console.error('Error fetching game settings:', error);
@@ -424,6 +443,9 @@ app.post('/settings', async (req, res) => {
         }
 
         await settings.save();
+
+        // Invalidate the in-memory cache since settings changed
+        invalidateSettingsCache();
 
         trace.configChange(
             "Game configuration updated by admin",

@@ -59,31 +59,24 @@ interface IPopulatedAdLean {
 
 const router = express.Router();
 
-// Get all public ads with complete casino information
+// Get all public ads with SLIM casino data (only fields needed for ad cards)
+// This is the main endpoint hit by AdContainer on every page load — keep it fast
 router.get('/', async (req, res) => {
     try {
         const ads = await Ad.find({})
             .select('title description link imageUrl rating service location isShowInMainPage percentageInHomePage orderInCasinosPage casino')
             .populate({
                 path: 'casino',
-                select: 'name description logo website established ourRating userRating trustIndex ' +
-                'categoryRatings payoutRatio payoutSpeed licenses securityMeasures fairnessVerification ' +
-                'paymentMethods currencies minDeposit maxPayout contentSections advantages disadvantages ' +
-                'isActive orderInListing offer'
+                select: 'name logo website ourRating trustIndex offer isActive'
             })
             .lean<IPopulatedAdLean[]>();
-
-        // Add verification logging
-        console.log('Populated ads:', ads.map(ad => ({
-            id: ad._id,
-            title: ad.title,
-            casinoName: ad.casino?.name,
-            casinoId: ad.casino?._id
-        })));
 
         if (!ads || ads.length === 0) {
             return res.status(404).json({ message: 'No ads found.' });
         }
+
+        // Allow browsers/CDNs to cache for 5 minutes
+        res.set('Cache-Control', 'public, max-age=300');
         res.status(200).json(ads);
     } catch (error) {
         console.error('Error fetching public ads:', error);
@@ -91,7 +84,7 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Get main content ads for public view with complete casino information
+// Get main content ads for public view with slim casino data
 router.get('/main-content', async (req, res) => {
     try {
         // Get all main content ads
@@ -103,24 +96,10 @@ router.get('/main-content', async (req, res) => {
         .populate({
             path: 'casino',
             match: { isActive: true },
-            select: 'name description logo website established ourRating userRating trustIndex ' +
-                   'categoryRatings payoutRatio payoutSpeed licenses securityMeasures fairnessVerification ' +
-                   'paymentMethods currencies minDeposit maxPayout contentSections advantages disadvantages ' +
-                   'isActive orderInListing offer'
+            select: 'name logo website ourRating trustIndex offer isActive'
         })
         .sort({ percentageInHomePage: -1 })
         .lean<IPopulatedAdLean[]>();
-
-        // Log the populated data for debugging
-        console.log('Populated main content ads with full data:', 
-            ads.map(ad => ({
-                adId: ad._id,
-                title: ad.title,
-                casinoId: ad.casino?._id,
-                casinoName: ad.casino?.name,
-                hasCasino: !!ad.casino
-            }))
-        );
 
         if (!ads || ads.length === 0) {
             return res.status(404).json({ 
@@ -131,6 +110,8 @@ router.get('/main-content', async (req, res) => {
             });
         }
 
+        // Allow browsers/CDNs to cache for 5 minutes
+        res.set('Cache-Control', 'public, max-age=300');
         res.status(200).json(ads);
     } catch (error) {
         console.error('Error fetching main content ads:', error);
@@ -148,24 +129,15 @@ router.get('/location/:location', async (req, res) => {
             .select('title description link imageUrl rating service location isShowInMainPage percentageInHomePage orderInCasinosPage casino')
             .populate({
                 path: 'casino',
-                select: 'name description logo website established ourRating userRating trustIndex ' +
-                       'categoryRatings payoutRatio payoutSpeed licenses securityMeasures fairnessVerification ' +
-                       'paymentMethods currencies minDeposit maxPayout contentSections advantages disadvantages ' +
-                       'isActive orderInListing'
+                select: 'name logo website ourRating trustIndex offer isActive orderInListing'
             })
             .lean<IPopulatedAdLean[]>();
-
-        // Add verification logging
-        console.log(`Populated ads for location ${req.params.location}:`, ads.map(ad => ({
-            id: ad._id,
-            title: ad.title,
-            casinoName: ad.casino?.name,
-            casinoId: ad.casino?._id
-        })));
 
         if (!ads || ads.length === 0) {
             return res.status(404).json({ message: 'No ads found for this location' });
         }
+
+        res.set('Cache-Control', 'public, max-age=300');
         res.status(200).json(ads);
     } catch (error) {
         console.error('Error fetching public ads by location:', error);
@@ -173,7 +145,7 @@ router.get('/location/:location', async (req, res) => {
     }
 });
 
-// Get public ad by ID with complete casino information
+// Get public ad by ID with complete casino information (used for detail views)
 router.get('/:id', async (req, res) => {
     try {
         const ad = await Ad.findById(req.params.id)
@@ -187,17 +159,11 @@ router.get('/:id', async (req, res) => {
             })
             .lean<IPopulatedAdLean>();
 
-        // Add verification logging
-        console.log(`Populated ad for ID ${req.params.id}:`, ad ? {
-            id: ad._id,
-            title: ad.title,
-            casinoName: ad.casino?.name,
-            casinoId: ad.casino?._id
-        } : 'No ad found');
-
         if (!ad) {
             return res.status(404).json({ message: 'Ad not found' });
         }
+
+        res.set('Cache-Control', 'public, max-age=300');
         res.status(200).json(ad);
     } catch (error) {
         console.error('Error fetching public ad:', error);
