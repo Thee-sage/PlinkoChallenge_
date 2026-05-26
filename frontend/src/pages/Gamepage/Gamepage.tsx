@@ -1,6 +1,5 @@
 import { Game } from "./Game";
 import { useState, useEffect, useRef, useMemo } from 'react';
-import axios from 'axios';
 import styles from "./Gamepage.module.css";
 import { StandardAdCard } from '../../components/minorcomponents/StandardAdCard/StandardAdCard';
 import { FooterAdCard } from "../../components/minorcomponents/footeradcard/footerAdCard";

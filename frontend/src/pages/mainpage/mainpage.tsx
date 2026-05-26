@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Link } from "react-router-dom";
 import { Demo } from './Demo';
-import axios from 'axios';
 import styles from "./PlinkoLandingPage.module.css"; // Using GamePage styles
 import { StandardAdCard } from '../../components/minorcomponents/StandardAdCard/StandardAdCard';
 import { FooterAdCard } from "../../components/minorcomponents/footeradcard/footerAdCard";

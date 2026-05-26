@@ -17,7 +17,6 @@ interface AdContainerProps {
 export const AdContainer = ({ renderAds, children }: AdContainerProps) => {
   const [ads, setAds] = useState<Ad[]>([]);
   const [mainContentAds, setMainContentAds] = useState<Ad[]>([]);
-  const [error, setError] = useState<string | null>(null);
   const hasFetchedRef = useRef(false);
 
   useEffect(() => {
@@ -51,7 +50,6 @@ export const AdContainer = ({ renderAds, children }: AdContainerProps) => {
       } catch (error) {
         if (!isMounted) return;
         console.error("Error fetching ads:", error);
-        setError("Failed to load advertisements");
         setAds([]);
         setMainContentAds([]);
       }
