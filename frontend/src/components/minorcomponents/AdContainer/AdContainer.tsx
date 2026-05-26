@@ -28,15 +28,9 @@ export const AdContainer = ({ renderAds, children }: AdContainerProps) => {
 
     const fetchAds = async () => {
       try {
-        setError(null);
-
         const [regularResponse, mainContentResponse] = await Promise.all([
-          axios.get<Ad[]>(`${baseURL}/public`, {
-            withCredentials: true
-          }),
-          axios.get<Ad[]>(`${baseURL}/public/main-content`, {
-            withCredentials: true
-          })
+          axios.get<Ad[]>(`${baseURL}/public`, { withCredentials: true }),
+          axios.get<Ad[]>(`${baseURL}/public/main-content`, { withCredentials: true })
         ]);
 
         if (!isMounted) return;
@@ -47,9 +41,9 @@ export const AdContainer = ({ renderAds, children }: AdContainerProps) => {
         setAds(regularAds);
         setMainContentAds(mainContentData.filter(ad => ad.location === "MainContent"));
 
-      } catch (error) {
+      } catch (err) {
         if (!isMounted) return;
-        console.error("Error fetching ads:", error);
+        console.error("Error fetching ads:", err);
         setAds([]);
         setMainContentAds([]);
       }
@@ -60,7 +54,7 @@ export const AdContainer = ({ renderAds, children }: AdContainerProps) => {
     return () => {
       isMounted = false;
     };
-  }, []); // No dependencies — fetch once on mount
+  }, []);
 
   const headerAds = Array.isArray(ads) ? ads.filter(ad => ad?.location === "Header") : [];
   const sidebarAds = Array.isArray(ads) ? ads.filter(ad => ad?.location === "Sidebar") : [];
