@@ -1,103 +1,59 @@
-import sgMail from '@sendgrid/mail';
+import nodemailer from 'nodemailer';
 
-// SendGrid Configuration
-const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || '';
+// Gmail Configuration using App Password
+const GMAIL_USER = process.env.GMAIL_USER || '';
+const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD || '';
 
-// Initialize SendGrid
-if (SENDGRID_API_KEY) {
-    sgMail.setApiKey(SENDGRID_API_KEY);
-    console.log('✅ SendGrid client initialized');
+// Create nodemailer transporter using Gmail
+export const emailTransporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: GMAIL_USER,
+        pass: GMAIL_APP_PASSWORD,
+    },
+});
+
+// Verify connection on startup
+if (GMAIL_USER && GMAIL_APP_PASSWORD) {
+    emailTransporter.verify((error) => {
+        if (error) {
+            console.error('❌ Gmail transporter verification failed:', error.message);
+        } else {
+            console.log('✅ Gmail transporter ready');
+        }
+    });
 } else {
-    console.warn('⚠️  SendGrid not configured. SENDGRID_API_KEY environment variable is required.');
+    console.warn('⚠️  Gmail not configured. Set GMAIL_USER and GMAIL_APP_PASSWORD environment variables.');
 }
 
 // Helper function to get the sender email
 export const getSenderEmail = (): string => {
-    return process.env.SENDGRID_FROM_EMAIL || process.env.GMAIL_USER || 'noreply@example.com';
+    return GMAIL_USER || 'noreply@example.com';
 };
 
-// Create a nodemailer-like transporter interface for backward compatibility
-export const emailTransporter = {
-    sendMail: async (options: {
-        from?: string;
-        to: string | string[];
-        subject: string;
-        html?: string;
-        text?: string;
-        replyTo?: string;
-    }) => {
-        if (!SENDGRID_API_KEY) {
-            console.warn('SendGrid not configured, skipping email send');
-            return;
-        }
-
-        try {
-            const msg: any = {
-                from: options.from || getSenderEmail(),
-                to: Array.isArray(options.to) ? options.to : options.to,
-                subject: options.subject,
-            };
-
-            if (options.html) {
-                msg.html = options.html;
-            }
-            if (options.text) {
-                msg.text = options.text;
-            }
-            if (!msg.html && !msg.text) {
-                msg.text = '';
-            }
-
-            if (options.replyTo) {
-                msg.replyTo = options.replyTo;
-            }
-
-            await sgMail.send(msg);
-            console.log(`Email sent successfully to ${options.to}`);
-        } catch (error) {
-            console.error('Error sending email via SendGrid:', error);
-            throw error;
-        }
-    },
-    verify: (callback?: (error: any, success?: any) => void) => {
-        if (!SENDGRID_API_KEY) {
-            if (callback) {
-                callback(new Error('SendGrid not configured'), null);
-            }
-            return;
-        }
-        // SendGrid doesn't have a verify method like nodemailer, so we'll just check if API key exists
-        if (callback) {
-            callback(null, true);
-        }
-    }
-};
-
-// Export SendGrid-specific functions for direct use if needed
+// Export sendPasswordResetEmail for backward compatibility
 export async function sendPasswordResetEmail(toEmail: string, resetUrl: string) {
-    if (!SENDGRID_API_KEY) {
-        console.warn('SendGrid not configured, skipping sendPasswordResetEmail');
+    if (!GMAIL_USER || !GMAIL_APP_PASSWORD) {
+        console.warn('Gmail not configured, skipping sendPasswordResetEmail');
         return;
     }
 
-    const msg = {
-        from: getSenderEmail(),
+    await emailTransporter.sendMail({
+        from: GMAIL_USER,
         to: toEmail,
         subject: 'Password reset',
         html: `<p>Click to reset your password: <a href="${resetUrl}">${resetUrl}</a></p>`
-    };
-
-    await sgMail.send(msg);
+    });
 }
 
 export async function sendGenericEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
-    if (!SENDGRID_API_KEY) {
-        console.warn('SendGrid not configured, skipping sendGenericEmail');
+    if (!GMAIL_USER || !GMAIL_APP_PASSWORD) {
+        console.warn('Gmail not configured, skipping sendGenericEmail');
         return;
     }
 
-    await sgMail.send({
-        from: getSenderEmail(),
+    await emailTransporter.sendMail({
+        from: GMAIL_USER,
         to,
         subject,
         html
