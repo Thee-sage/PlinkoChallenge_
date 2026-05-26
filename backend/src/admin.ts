@@ -171,16 +171,25 @@ router.post('/admin-login', async (req: Request, res: Response) => {
       expiresAt: Date.now() + OTP_EXPIRATION_TIME
     };
 
-    await emailTransporter.sendMail({
-      from: getSenderEmail(),
-      to: user.email,
-      subject: 'Admin Login OTP',
-      html: `
-        <h2>Your OTP for Admin Login</h2>
-        <p>Please use the following OTP to complete your login: <strong>${otp}</strong></p>
-        <p>This OTP is valid for 30 minutes.</p>
-      `,
-    });
+    try {
+      await emailTransporter.sendMail({
+        from: getSenderEmail(),
+        to: user.email,
+        subject: 'Admin Login OTP',
+        html: `
+          <h2>Your OTP for Admin Login</h2>
+          <p>Please use the following OTP to complete your login: <strong>${otp}</strong></p>
+          <p>This OTP is valid for 30 minutes.</p>
+        `,
+      });
+    } catch (emailErr) {
+      console.error('Failed to send OTP email:', emailErr);
+      // OTP is still stored — log it server-side so admin can retrieve it if needed
+      console.log(`[ADMIN OTP FALLBACK] Email: ${user.email}, OTP: ${otp}`);
+      return res.status(500).json({ 
+        message: 'Login credentials valid but failed to send OTP email. Check server logs or email configuration.' 
+      });
+    }
 
     res.status(200).json({ 
       message: 'OTP sent to your email for verification',
