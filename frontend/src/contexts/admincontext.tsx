@@ -179,28 +179,34 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
     clearStaleCache();
     
     try {
-      console.log('Attempting login for:', identifier);
       const response = await axios.post(`${baseURL}/admin/admin-login`, {
         identifier,
         password
-      }, {
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache'
-        }
       });
       
+      // Direct JWT response (no OTP step)
+      if (response.data.token) {
+        localStorage.setItem('adminToken', response.data.token);
+        setToken(response.data.token);
+        setIsAuthenticated(true);
+        setMessage('Login successful');
+        setAdminData({
+          email: response.data.email,
+          uid: response.data.uid,
+          role: 'admin'
+        });
+        return;
+      }
+
+      // Legacy OTP flow fallback
       if (response.data.email) {
-        console.log('Setting current email:', response.data.email);
         setCurrentEmail(response.data.email);
       } else {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (emailRegex.test(identifier)) {
-          console.log('Setting current email from identifier:', identifier);
           setCurrentEmail(identifier);
         }
       }
-      
       setMessage(response.data.message || 'Please check your email for OTP');
     } catch (err: any) {
       console.error('Login error:', err);

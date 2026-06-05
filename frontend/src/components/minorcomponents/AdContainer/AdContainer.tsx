@@ -14,13 +14,37 @@ interface AdContainerProps {
   children: React.ReactNode;
 }
 
+const ADS_CACHE_KEY = 'plinko_ads_cache';
+const ADS_MAIN_CACHE_KEY = 'plinko_ads_main_cache';
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function loadFromCache(key: string): Ad[] | null {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const { data, timestamp } = JSON.parse(raw);
+    if (Date.now() - timestamp > CACHE_TTL) return null;
+    return data as Ad[];
+  } catch {
+    return null;
+  }
+}
+
+function saveToCache(key: string, data: Ad[]) {
+  try {
+    localStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
+  } catch {
+    // ignore storage errors
+  }
+}
+
 export const AdContainer = ({ renderAds, children }: AdContainerProps) => {
-  const [ads, setAds] = useState<Ad[]>([]);
-  const [mainContentAds, setMainContentAds] = useState<Ad[]>([]);
+  // Load from cache immediately (synchronous) so ads show instantly
+  const [ads, setAds] = useState<Ad[]>(() => loadFromCache(ADS_CACHE_KEY) ?? []);
+  const [mainContentAds, setMainContentAds] = useState<Ad[]>(() => loadFromCache(ADS_MAIN_CACHE_KEY) ?? []);
   const hasFetchedRef = useRef(false);
 
   useEffect(() => {
-    // Only fetch once — ads are public data, no need to refetch on auth changes
     if (hasFetchedRef.current) return;
     hasFetchedRef.current = true;
 
@@ -37,15 +61,19 @@ export const AdContainer = ({ renderAds, children }: AdContainerProps) => {
 
         const regularAds = Array.isArray(regularResponse.data) ? regularResponse.data : [];
         const mainContentData = Array.isArray(mainContentResponse.data) ? mainContentResponse.data : [];
+        const filteredMain = mainContentData.filter(ad => ad.location === "MainContent");
 
         setAds(regularAds);
-        setMainContentAds(mainContentData.filter(ad => ad.location === "MainContent"));
+        setMainContentAds(filteredMain);
+
+        // Cache for next visit
+        saveToCache(ADS_CACHE_KEY, regularAds);
+        saveToCache(ADS_MAIN_CACHE_KEY, filteredMain);
 
       } catch (err) {
         if (!isMounted) return;
         console.error("Error fetching ads:", err);
-        setAds([]);
-        setMainContentAds([]);
+        // Keep showing cached data on error — don't clear it
       }
     };
 
@@ -56,18 +84,13 @@ export const AdContainer = ({ renderAds, children }: AdContainerProps) => {
     };
   }, []);
 
-  const headerAds = Array.isArray(ads) ? ads.filter(ad => ad?.location === "Header") : [];
-  const sidebarAds = Array.isArray(ads) ? ads.filter(ad => ad?.location === "Sidebar") : [];
-  const footerAds = Array.isArray(ads) ? ads.filter(ad => ad?.location === "Footer") : [];
+  const headerAds = ads.filter(ad => ad?.location === "Header");
+  const sidebarAds = ads.filter(ad => ad?.location === "Sidebar");
+  const footerAds = ads.filter(ad => ad?.location === "Footer");
 
   return (
     <div className={styles.pageWrapper}>
-      {renderAds({
-        headerAds,
-        sidebarAds,
-        mainContentAds,
-        footerAds,
-      })}
+      {renderAds({ headerAds, sidebarAds, mainContentAds, footerAds })}
       {children}
     </div>
   );
