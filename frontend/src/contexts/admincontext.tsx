@@ -154,37 +154,13 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
   };
 
   useEffect(() => {
-    const handleBeforeUnload = () => {
-      localStorage.removeItem('adminToken');
-      clearStaleCache();
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        clearStaleCache();
-        const storedToken = localStorage.getItem('adminToken');
-        if (storedToken) {
-          refreshToken().catch(console.error);
-        }
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
     const storedToken = localStorage.getItem('adminToken');
     if (storedToken) {
       setToken(storedToken);
       setIsAuthenticated(true);
       fetchDashboardData(storedToken).catch(console.error);
     }
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      handleBeforeUnload();
-    };
-  }, [clearStaleCache, refreshToken]);
+  }, []);
 
   useEffect(() => {
     console.log('Auth State Changed:', {
