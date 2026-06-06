@@ -10,6 +10,7 @@ interface AdContainerProps {
     sidebarAds: Ad[];
     mainContentAds: Ad[];
     footerAds: Ad[];
+    loading: boolean;
   }) => React.ReactNode;
   children: React.ReactNode;
 }
@@ -39,9 +40,13 @@ function saveToCache(key: string, data: Ad[]) {
 }
 
 export const AdContainer = ({ renderAds, children }: AdContainerProps) => {
-  // Load from cache immediately (synchronous) so ads show instantly
-  const [ads, setAds] = useState<Ad[]>(() => loadFromCache(ADS_CACHE_KEY) ?? []);
-  const [mainContentAds, setMainContentAds] = useState<Ad[]>(() => loadFromCache(ADS_MAIN_CACHE_KEY) ?? []);
+  const cachedAds = loadFromCache(ADS_CACHE_KEY);
+  const cachedMain = loadFromCache(ADS_MAIN_CACHE_KEY);
+
+  const [ads, setAds] = useState<Ad[]>(cachedAds ?? []);
+  const [mainContentAds, setMainContentAds] = useState<Ad[]>(cachedMain ?? []);
+  // Only show loading state if there's no cache at all
+  const [loading, setLoading] = useState(!cachedAds);
   const hasFetchedRef = useRef(false);
 
   useEffect(() => {
@@ -66,14 +71,13 @@ export const AdContainer = ({ renderAds, children }: AdContainerProps) => {
         setAds(regularAds);
         setMainContentAds(filteredMain);
 
-        // Cache for next visit
         saveToCache(ADS_CACHE_KEY, regularAds);
         saveToCache(ADS_MAIN_CACHE_KEY, filteredMain);
-
       } catch (err) {
         if (!isMounted) return;
         console.error("Error fetching ads:", err);
-        // Keep showing cached data on error — don't clear it
+      } finally {
+        if (isMounted) setLoading(false);
       }
     };
 
@@ -90,7 +94,7 @@ export const AdContainer = ({ renderAds, children }: AdContainerProps) => {
 
   return (
     <div className={styles.pageWrapper}>
-      {renderAds({ headerAds, sidebarAds, mainContentAds, footerAds })}
+      {renderAds({ headerAds, sidebarAds, mainContentAds, footerAds, loading })}
       {children}
     </div>
   );

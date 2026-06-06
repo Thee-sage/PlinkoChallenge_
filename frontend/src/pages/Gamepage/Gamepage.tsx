@@ -6,6 +6,7 @@ import { FooterAdCard } from "../../components/minorcomponents/footeradcard/foot
 import { SidebarAdCard } from '../../components/minorcomponents/SidebarAdCard/SidebarAdCard';
 import { RotatingMainContentAds } from '../../components/minorcomponents/RotatingMainContentAds/RotatingMainContentAds';
 import { AdContainer } from '../../components/minorcomponents/AdContainer/AdContainer';
+import { AdSkeleton } from '../../components/minorcomponents/AdSkeleton/AdSkeleton';
 import { Ad } from '../../components/minorcomponents/types';
 import PlinkoInfo from "./plinkoinfo/plinkoinfo";
 import { baseURL } from "../../utils";
@@ -330,24 +331,26 @@ export function GamePage() {
 
   // Use a render prop function that doesn't change
   const renderAds = useMemo(() => {
-    return ({ headerAds, sidebarAds, mainContentAds, footerAds }: { 
+    return ({ headerAds, sidebarAds, mainContentAds, footerAds, loading }: { 
       headerAds: Ad[], 
       sidebarAds: Ad[], 
       mainContentAds: Ad[], 
-      footerAds: Ad[] 
+      footerAds: Ad[],
+      loading: boolean
     }) => (
       <div className={styles.whole2}>
         <div className={styles.whole1}>
           <div className={styles.whole}>
-            {/* Apply transition class conditionally */}
             <div className={`${styles.headerAds} ${isMobile && isTransitioning ? styles.adTransition : ''}`}>
-              {isMobile 
-                ? getMobileAds(headerAds, sidebarAds).map((ad) => (
-                    <StandardAdCard key={`${ad._id}-mobile-${mobileRotationPhase}-${currentHeaderIndex}-${currentSidebarIndex}`} ad={ad} />
-                  ))
-                : getVisibleAds(headerAds, currentHeaderIndex, adSettings.standardAdCount).map((ad) => (
-                    <StandardAdCard key={`${ad._id}-${currentHeaderIndex}`} ad={ad} />
-                  ))
+              {loading
+                ? <AdSkeleton width={280} height={450} count={adSettings.standardAdCount} />
+                : isMobile 
+                  ? getMobileAds(headerAds, sidebarAds).map((ad) => (
+                      <StandardAdCard key={`${ad._id}-mobile-${mobileRotationPhase}-${currentHeaderIndex}-${currentSidebarIndex}`} ad={ad} />
+                    ))
+                  : getVisibleAds(headerAds, currentHeaderIndex, adSettings.standardAdCount).map((ad) => (
+                      <StandardAdCard key={`${ad._id}-${currentHeaderIndex}`} ad={ad} />
+                    ))
               }
             </div>
             
@@ -398,9 +401,12 @@ export function GamePage() {
           {!isMobile && (
             <div className={styles.rsb}>
               <div className={styles.rightSidebar}>
-                {getVisibleAds(sidebarAds, currentSidebarIndex, adSettings.sidebarAdCount).map((ad) => (
-                  <SidebarAdCard key={`${ad._id}-${currentSidebarIndex}`} ad={ad} />
-                ))}
+                {loading
+                  ? <AdSkeleton width={280} height={450} count={adSettings.sidebarAdCount} />
+                  : getVisibleAds(sidebarAds, currentSidebarIndex, adSettings.sidebarAdCount).map((ad) => (
+                      <SidebarAdCard key={`${ad._id}-${currentSidebarIndex}`} ad={ad} />
+                    ))
+                }
               </div>
             </div>
           )}
@@ -408,13 +414,15 @@ export function GamePage() {
 
         <div className={styles.foota}>
           <div className={`${styles.footerAds} ${isFooterMobile ? styles.mobileFooterAds : ''}`}>
-            {isFooterMobile 
-              ? getMobileFooterAds(footerAds).map((ad) => (
-                  <FooterAdCard key={`${ad._id}-mobile-footer-${currentFooterIndex}`} ad={ad} />
-                ))
-              : getVisibleAds(footerAds, currentFooterIndex, adSettings.footerAdCount).map((ad) => (
-                  <FooterAdCard key={`${ad._id}-${currentFooterIndex}`} ad={ad} />
-                ))
+            {loading
+              ? <AdSkeleton width="100%" height={120} count={1} />
+              : isFooterMobile 
+                ? getMobileFooterAds(footerAds).map((ad) => (
+                    <FooterAdCard key={`${ad._id}-mobile-footer-${currentFooterIndex}`} ad={ad} />
+                  ))
+                : getVisibleAds(footerAds, currentFooterIndex, adSettings.footerAdCount).map((ad) => (
+                    <FooterAdCard key={`${ad._id}-${currentFooterIndex}`} ad={ad} />
+                  ))
             }
           </div>
         </div>
